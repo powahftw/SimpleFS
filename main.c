@@ -13,7 +13,6 @@
 
 // POWDERED BY CAFFEINE, SPERANZE DI LAUREA E BLACK MAGIC
 
-*/
 typedef struct Risorsa {
 	char filename[NAME_LENGHT];
 	_Bool isFile;
