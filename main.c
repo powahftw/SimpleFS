@@ -96,11 +96,13 @@ int write(Risorsa* Node, char contenuto[], char percorso[], char* Target, int va
 	return 0;
 	}
 	
-int find(Risorsa* Node,char target[]) {
-	if (strcmp(Node->filename, target) == 0) { printf("ok %s\n"); atleastone = 1;	}
-	if (Node->firstChild != NULL) {	find(Node->firstChild, target); }
-	if (Node->firstBrother != NULL) { find(Node->firstBrother, target); }
-	}
+int find(Risorsa* Node,char target[], char currentpath[]) { 
+	// Potrebbe venirti in menti di migliorare la complessità asintotica usando strcmp < 0, non è valida in quanto cerchiamo il nome della risorsa non il PATH
+	SPAM(("Current Path = |%s| Curr Node = |%s|\n", currentpath, Node->filename));
+	if (strcmp(Node->filename, target) == 0) { 	printf("ok %s/%s\n", currentpath, Node->filename); atleastone = 1; }
+	if (Node->firstChild != NULL) {	char temp[2048];	strcpy(temp, currentpath );	find(Node->firstChild, target, strcat(strcat(temp, "/"), Node->filename)); }
+	if (Node->firstBrother != NULL) { find(Node->firstBrother, target, currentpath); }
+}
 
 
 int deleteNode(Risorsa *node, char percorso[], char* Target, int value) {
@@ -363,13 +365,19 @@ int main(){
  		| |__   _ _ __   __| |
  		|  __| | | '_ \ / _` |
  		| |    | | | | | (_| |
-	    |_|    |_|_| |_|\__,_|
+	        |_|    |_|_| |_|\__,_|
 		*/
 		if (strcmp(firstpart, "find") == 0) {
-			char currpath[1024];
-			char temp[1024];
+			char currpath[BIG_COMMAND];
+			char temp[BIG_COMMAND];
+			char buffer[BIG_COMMAND];
 			scanf("%s", temp);
 			SPAM(("Stiamo eseguendo FIND con %s\n", temp));//strtok(NULL, " "));
+			strcpy(buffer, "");
+            atleastone = 0;
+            printf("%s", buffer);
+			find(Root.firstChild, temp, buffer);
+            if (atleastone == 0) { printf("no\n"); }
 			
             atleastone = 0;
 			find(&Root, temp);
