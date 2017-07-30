@@ -4,8 +4,9 @@
 #define NAME_LENGHT 256
 #define CONTENT_LIMIT 256
 #define print printf
+#define BIG_COMMAND 2048
 
-#if 0
+#if 0		// Implementing SPAM as DEBUGGING UTILITY
   #define SPAM(a) printf a
 #else
   #define SPAM(a) (void)0
@@ -24,7 +25,7 @@ typedef struct Risorsa {
 Risorsa Root;
 int atleastone;
 
-void printtree(Risorsa* node){ //QUESTA FUNZIONE E' COME LA VIA VITA = INUTILE
+void printtree(Risorsa* node){ // Questa funzione è quasi inutile quanto me
 	if (node==NULL) { printf("-");	}
 	else {
 		printf("[%s|%d]",node->filename, node->isFile);
@@ -34,52 +35,55 @@ void printtree(Risorsa* node){ //QUESTA FUNZIONE E' COME LA VIA VITA = INUTILE
 }
 
 Risorsa* walktree(Risorsa *node, char percorso[], int value) {
-
-	// Utility function. Given the root of the tree and the target path return the PARENT just up that! 
-	// IN: Risorsa* Root, Percorso, Value OUT: Risorsa* Parent
+	SPAM(("Il percorso e' %s\n\n", percorso));
+	char* p = percorso;  //char path[2048];	strcpy(path, percorso);
 	
-	SPAM(("CurrNodo: |%s| Percorso: |%s| Valore: |%d|", node->filename, percorso, value)); // Debugging
-
-	if (percorso[0]=='/' && value>0) { 												// Siamo nel caso in cui abbiamo ancora il prefisso / e abbiamo altra roba dopo 
-	if (node->firstChild == NULL && value > 0) { return 0; }						// Siamo nel caso in cui non abbiamo neanche un figlio della radice, e stiamo provando a aggiungere troppe sottorisorse
-	char* p = percorso; p++; SPAM(("\t #Good boyz don't play with ROOT#\n")); return walktree(node->firstChild, p, value); }
-
-	if (value==0) { return node;} // Stiamo lavorando con la radice e dobbiamo rimanere li
-	
-	char *target = strtok(percorso, "/");	SPAM(("\nTarget = |%s|\n", target));
-	
-	while (strcmp(node->filename, target) < 0) {
-		SPAM(("|%s| ha come 1F |%s|\n",node->filename, node->firstBrother->filename));
-		if (node->firstBrother == NULL) {
-			SPAM(("Errore mentre scende"));
-			return 0; // questo è l'errore mentre scende
+	if (percorso[0]=='/' && value > 0) { 												// Siamo nel caso in cui abbiamo ancora il prefisso / e abbiamo altra roba dopo 
+		if (node->firstChild == NULL && value > 0) { return 0; }
+		p++; SPAM(("\t#Good boyz don't play with ROOT#\n")); 
+		node = node->firstChild;
 		}
+	
+	if (value == 0) { SPAM(("Returning %s\n\n", node->filename)); return node;} 		// Stiamo lavorando con la radice e dobbiamo rimanere li
+	
+	p = strtok(percorso, "/");
+	
+	while (value > 1) {
+		SPAM(("\nTarget = |%s| Value = |%d| \n", p, value));
+		if (strcmp(node->filename, p) == 0) { 
+			if (node->firstChild != NULL) { SPAM(("Scendiamo subito a |%s|", node->firstChild)); node = node->firstChild; value--; p = strtok(NULL, "/"); SPAM(("\tOra path e' |%s|", p)); }
+			else  { SPAM(("Non possiamo scendere verticalmente\nn")); return 0; }
+			}
 		else {
-			//printf("Ci spostiamo al fratello |%s|\n", node->firstBrother->filename);
-			node = node->firstBrother;
+			if (node->firstBrother != NULL && strcmp(node->filename, p) < 0 ) { SPAM(("Spostamento al fratello |%s| con value |%d| e path |%s|", node->firstBrother->filename, value, p)); node = node->firstBrother; }
+			else { SPAM(("Errore spostamento orizzontale\n")); return 0;	}
+		}	
 		}
-	}
-		
-	if (value == 1) { SPAM(("Trovato! %s\n", node->filename)); return node;	}
-	if (node->firstChild != NULL) { SPAM(("Scendiamo!\n"));	walktree(node->firstChild, strtok(NULL, "!"), value-1); } //Controllo se possiamo scendere vericalmente
-	else { SPAM(("Non possiamo scendere verticalmente\n")); return 0; }
-	} 
-
-int read(Risorsa* Node, char percorso[], char* Target, int value) {
 	
-	/* DA COMPLETARE, QUELLO CHE DOVREBBE FARE E' CHE LEGGE IL FILE PASSATO COME PERCORSO E SE E' UN FILE STAMPA IL CONTENUTO, E' IMPORTANTE FARE QUALCOSA PER TUTTI 
-	I PARAM INUTILI CHE VENGONO PASSATI OGNI VOLTA*/
+	SPAM(("CURRENT: |%s| TARGET: |%s| VALUE: |%d|\n\n",node->filename, p, value));
+	if (value == 1) { 
+		while (node->firstBrother != NULL && strcmp(node->filename, p) < 0)
+		{ node = node->firstBrother; }
+		if (strcmp(node->filename, p) == 0) { SPAM(("RETURNING %s\n", node->filename)); return node; }
+		else { SPAM(("RETURNING 0\n\n")); return 0; }
+	}	
+}
+
+int read(Risorsa* Node, char percorso[], char* Target, int value) { 
 	
 	SPAM(("\nWe are trying to READ %s\n", percorso));
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
 	if (currNode == 0) { SPAM(("Errore")); printf("no\n"); return 0; }
+	if (currNode->firstChild == NULL) { SPAM(("Errore\n")); printf("no\n"); return 0; }
+	
 	currNode = currNode->firstChild;
 	SPAM(("\n\n%s\n\n", currNode->filename));
-	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) { currNode = currNode->firstBrother;	}
+	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0)
+		{ currNode = currNode->firstBrother; }
 	SPAM(("%d %d %d\n", (currNode == NULL), (currNode->isFile == 1), (strcmp(currNode->filename, Target)== 0)));
 	if (currNode != NULL && currNode->isFile == 1 && strcmp(currNode->filename, Target) == 0 ) { printf("contenuto %s\n", currNode->content); return 1; }
 	else { printf("no\n");	}
-	return 0;
+	return 0; 
 	}
 
 int write(Risorsa* Node, char contenuto[], char percorso[], char* Target, int value) {
@@ -87,13 +91,15 @@ int write(Risorsa* Node, char contenuto[], char percorso[], char* Target, int va
 	SPAM(("\nWe are trying to WRITE %s with %s\n", percorso, contenuto));
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
 	SPAM(("We returned %s", currNode->filename));
-	if (currNode == 0) { SPAM(("Errore\n")); return 0; }
+	if (currNode == 0) { SPAM(("Errore\n")); printf("no\n"); return 0; }
+	if (currNode->firstChild == NULL) { SPAM(("Errore\n")); printf("no\n"); return 0; }
 	currNode = currNode->firstChild;
 	//print("\n%s\n%s\n", currNode->filename, Target);
-	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) { currNode = currNode->firstBrother;	}
-	if (currNode != NULL && strcmp(currNode->filename, Target) == 0 && currNode->isFile == 1) { strcpy(currNode->content, contenuto); printf("ok %u\n", strlen(contenuto)); }
-	else { printf("no\n"); }
-	return 0;
+	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) // Ci spostiamo lateralmente una volta giunti al livello giusto
+		{ currNode = currNode->firstBrother; }
+	if (currNode != NULL && strcmp(currNode->filename, Target) == 0 && currNode->isFile == 1) { strcpy(currNode->content, contenuto); printf("ok %zu\n", strlen(contenuto)); }
+	else { printf("no\n"); } 
+	return 0; 
 	}
 	
 int find(Risorsa* Node,char target[], char currentpath[]) { 
@@ -104,22 +110,24 @@ int find(Risorsa* Node,char target[], char currentpath[]) {
 	if (Node->firstBrother != NULL) { find(Node->firstBrother, target, currentpath); }
 }
 
-
 int deleteNode(Risorsa *node, char percorso[], char* Target, int value) {
+
 	SPAM(("\nWe are trying to DELETE %s\n", percorso));
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
 	if (currNode == 0) { print("no\n"); return 0; }
 	SPAM(("\n\n Lavorando con delete siamo arrivati a lavorare con il padre: %s\n\n", currNode->filename));
-	if (currNode->firstChild == NULL) { SPAM(("no\n")); return 0;} // Siamo arrivati al padre della risorsa che dobbiamo cancellare ma lui non c'è
+	if (currNode->firstChild == NULL) { printf(("no\n")); return 0;} // Siamo arrivati al padre della risorsa che dobbiamo cancellare ma lui non c'è
 	if (strcmp(currNode->firstChild->filename, Target) == 0) { Risorsa* tempNode = currNode->firstChild->firstBrother; free(currNode->firstChild); currNode->firstChild = tempNode; printf("ok\n"); return 1;	} // Siamo nel caso in cui dobbiamo fare fuori il figlio unico del padre
 	Risorsa* Previous = currNode;
 	currNode = currNode->firstChild;
-	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) {	Previous = currNode; currNode = currNode->firstBrother; }
+	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0)  // Ci spostiamo laterlmente una volta giunti al livello corretto
+		{ Previous = currNode; currNode = currNode->firstBrother; }
 	if (strcmp(currNode->filename, Target) == 0 && currNode->firstChild == NULL) { Previous->firstBrother = currNode->firstBrother; free(currNode); printf("ok\n"); return 1; }
-	else { printf("no\n"); return 0; }
+	else { printf("no\n"); return 0; } 
 	}
-
+	
 void freerecursive(Risorsa *node) {
+	
 	if (node!=NULL) {
 		freerecursive(node->firstBrother);
 		freerecursive(node->firstChild);
@@ -128,9 +136,11 @@ void freerecursive(Risorsa *node) {
 }
 
 int deleteRecursive(Risorsa *node, char percorso[], char* Target, int value) {
-	SPAM(("\n We will try to DELETE RECURSEVELY OR HOW THE FUCK IT'S TYPED %s\n", percorso));
+	
+	SPAM(("\n We will try to DELETE RECURSIVELY %s\n", percorso));
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
 	if (currNode == 0) { printf("no\n"); return 0; }
+	if (currNode->firstChild == NULL) { printf("no\n"); return 0;	}
 	if (strcmp(currNode->firstChild->filename, Target) == 0) { 
 		Risorsa* tempNode = currNode->firstChild->firstBrother; 
 		freerecursive(currNode->firstChild);
@@ -139,67 +149,65 @@ int deleteRecursive(Risorsa *node, char percorso[], char* Target, int value) {
 		return 1;	} // Siamo nel caso in cui dobbiamo fare fuori il figlio del padre
 	Risorsa* Previous = currNode;
 	currNode = currNode->firstChild;
-	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) {	Previous = currNode; currNode = currNode->firstBrother; }
+	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) 
+		{ Previous = currNode; currNode = currNode->firstBrother; }
 	if (strcmp(currNode->filename, Target) == 0) { 
         SPAM(("PREVIOUS : %s PREVIOUS BROTHER: %s CURRENT: %s CURRENT BROTHER: %s\n", Previous->filename, Previous->firstBrother, currNode->filename, currNode->firstBrother->filename));
         Previous->firstBrother = currNode->firstBrother; freerecursive(currNode->firstChild); free(currNode);
         printf("ok\n"); return 1; }
 	else { printf("no\n"); return 0; }
-		
+	
 		
 }
+
 int insertiontree(Risorsa* Node, char percorso[], char* toAdd, int value, _Bool isFile){ /* Va bene sia per create che per create.dir, in base se si è fatta l'impl accennata sotto*/
 	
-	/* Qualche commento a caldo su questo codice, per ora funziona, bisogna fare dei test più approfonditi. Uno dei problemi più gravi è l'uguale. Andranno implementati
-	degli if per individuare l'eventuale uguaglianza e ritornare errore: non possiamo fare un inserimento di qualcosa già presente. Un altra piccola cosa utile sarebbe
-	implementare un argomento di funzione extra al fine di lavorare sia con inserimento file che per inserimento cartelle, quello che cambia è che durante la creazione con la 
-	malloc va settato il parametro isfile UPDATE: Sembra che abbia aggiunto isBool, bisogna vedere se funzionerà*/
-	
-	//#########################################################################################################################################################################################
-	/* Qualche commento a Freddo su questo codice. Probabilmente qua è dove parte la roba di SIGKILL11, che è il numero di volte che ucciderei chi ha pensato di rompere cosi tanto il *****
-	Potrebbe essere sensato fare la malloc solo l'istante prima di inserire, in modo da evitare aggiunta di roba che non viene smaltita correttamente. Usiamo il toAdd per fare i confronti invece di lavorare con il node
-	(Che secondo me è anche più veloce) Può anche avere senso aggiungere un fantastico parametro per tenere il percorso salvato e fare la find con meno rotture */
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
 	if (currNode == 0 || currNode->isFile == 1) { SPAM(("Abbiamo sbagliato prima, o si tratta di un file!!!\n\n")); printf("no\n"); return 0;	}
 	else {
-		Risorsa* newNode = malloc(sizeof(Risorsa)); //Allochiamo spazio per il nuovo nodo 
-		strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");}//Facciamo una basic declaration per il nuovo nodo
-		
 		SPAM(("\n\nWe are trying to add |%s|\n", toAdd));
-		if (currNode->firstChild == NULL) { currNode->firstChild = newNode; printf("ok\n"); return 0;} // Caso di inserimento in cui dobbiamo semplicemente metterlo come figli
+		if (currNode->firstChild == NULL) { // Caso inserimento come primo figlio
+			Risorsa* newNode = malloc(sizeof(Risorsa));
+			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");}//Facciamo una basic declaration per il nuovo nodo
+			currNode->firstChild = newNode; printf("ok\n"); return 0;	} 
 		if (strcmp(toAdd, currNode->firstChild->filename) <= 0 ) { // Caso di inserimento in cui dobbiamo inserire il nuovo nodo come primo dei figli!
-			if (strcmp(toAdd, currNode->firstChild->filename) == 0)  {	SPAM(("Abbiamo gia' il figlio!")); printf("no\n"); free(newNode); return 0;	}
-			SPAM(("\nStiamo lavorando con |%s| e suo figlio |%s|, in mezzo metteremo |%s|\n\n", currNode->filename, currNode->firstChild->filename, newNode->filename));
+			if (strcmp(toAdd, currNode->firstChild->filename) == 0)  {	SPAM(("Abbiamo gia' il figlio!")); printf("no\n"); return 0;	}
+			SPAM(("\nStiamo lavorando con |%s| e suo figlio |%s|, in mezzo metteremo |%s|\n\n", currNode->filename, currNode->firstChild->filename, toAdd));
+			Risorsa* newNode = malloc(sizeof(Risorsa)); 
+			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");}//Facciamo una basic declaration per il nuovo nodo
 			newNode->firstBrother = currNode->firstChild; currNode->firstChild = newNode;
 			SPAM(("Vediamo ora le cose! Il padre e' |%s|, il figlio inserito e' |%s| ed il suo vecchio figlio era |%s|\n", currNode->filename, currNode->firstChild->filename, currNode->firstChild->firstBrother->filename));
 			printf("ok\n");
 			return 1;
 			}
-		else {
+		else { // Inserimento in mezzo ai fratelli
 			currNode = currNode->firstChild;
-			while(currNode->firstBrother != NULL && strcmp(toAdd, currNode->firstBrother->filename) > 0) { SPAM(("looping"));	currNode = currNode->firstBrother;	}
+			while(currNode->firstBrother != NULL && strcmp(toAdd, currNode->firstBrother->filename) > 0) 
+				{ SPAM(("looping")); currNode = currNode->firstBrother;	}
 			SPAM((" in the sky with diamonds\n")); 
-			if (strcmp(toAdd, currNode->filename) == 0)  {	SPAM(("Abbiamo già il figlio!\n")); printf("no\n"); free(newNode); return 0;	}
+			if (strcmp(toAdd, currNode->filename) == 0)  {	SPAM(("Abbiamo già il figlio!\n")); printf("no\n"); return 0;	}
 			SPAM(("HELLO"));
+			Risorsa* newNode = malloc(sizeof(Risorsa)); 
+			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");}//Facciamo una basic declaration per il nuovo nodo
 			newNode->firstBrother = currNode->firstBrother; currNode->firstBrother = newNode;
 			SPAM(("\nIl vecchio nodo era |%s|, stiamo aggiungendo |%s| in mezzo a lui e |%s|\n", currNode->filename, currNode->firstBrother->filename, currNode->firstBrother->firstBrother->filename));
 			printf("ok\n");
 			return 1;
 			}
-			
 	}
 }
 
 int main(){
 	
-	char firstpart[50];
+	char firstpart[25];
 	int exit_command = 0;
 	
-	strcpy(Root.filename, "/");
+	strcpy(Root.filename, "");
 	
 	SPAM(("BENVENUTO NEL FANTASTICO FILESYSTEM\n\n"));
 	
-	SPAM(("Il nome del coso e' %s", Root.filename));
+	SPAM(("Il nome del coso e' |%s|", Root.filename));
+	
 	do {
 		SPAM(("\n\\(^^)/   T A K E   M Y   E N E R G Y     \\(^^)/ \n"));
 		
@@ -216,13 +224,13 @@ int main(){
  		 \_____|_|  \___|\__,_|\__\___|
 		*/
 		if (strcmp(firstpart, "create") == 0) {
-			char temp[1024];
+			char temp[BIG_COMMAND];
 			scanf("%s", temp);
 			SPAM(("Stiamo eseguendo CREATE con %s\n", temp));//strtok(NULL, " "));
 			
 			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
 			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
-			char str[1024];	strcpy(str, temp);  	char * pch; char * before;
+			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
     		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
@@ -239,13 +247,13 @@ int main(){
  		 \_____|_|  \___|\__,_|\__\___(_)__,_|_|_|  
 		*/
 		if (strcmp(firstpart, "create_dir") == 0 || strcmp(firstpart, "cd") == 0) {
-			char temp[1024];
+			char temp[BIG_COMMAND];
 			scanf("%s", temp);
 			SPAM(("Stiamo eseguendo CREATE DIRECTORY con %s\n", temp));//strtok(NULL, " "));
 			
 			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
 			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
-			char str[1024];	strcpy(str, temp);  	char * pch; char * before;
+			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
     		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
@@ -263,13 +271,13 @@ int main(){
 		 |_|  \_\___|\__,_|\__,_|
 		*/
 		if (strcmp(firstpart, "read") == 0) {
-			char temp[1024];
+			char temp[BIG_COMMAND];
 			scanf("%s", temp);
 			SPAM(("Stiamo eseguendo READ con %s\n", temp));//strtok(NULL, " "));
 			
 			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
 			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
-			char str[1024];	strcpy(str, temp);  	char * pch; char * before;
+			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
     		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
@@ -287,15 +295,15 @@ int main(){
 	    */
 		if (strcmp(firstpart, "write") == 0) {
 			
-			char temp[1024];
+			char temp[BIG_COMMAND];
 			scanf("%s", temp);
-			char temp1[1024];
+			char temp1[CONTENT_LIMIT];
 			scanf("%s", temp1);
 			
 			
 			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
 			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
-			char str[1024];	strcpy(str, temp);  	char * pch; char * before;
+			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
     		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
@@ -321,13 +329,13 @@ int main(){
 		*/
 		if (strcmp(firstpart, "delete") == 0) {
 			
-			char temp[1024];
+			char temp[BIG_COMMAND];
 			scanf("%s", temp);
 			SPAM(("Stiamo eseguendo DELETE con %s\n", temp));// strtok(NULL, " "));
 			
 			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
 			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
-			char str[1024];	strcpy(str, temp);  	char * pch; char * before;
+			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
     		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
@@ -344,14 +352,14 @@ int main(){
  		|_____/ \___|_|\___|\__\___(_)_|  
 		*/
 		if (strcmp(firstpart, "delete_r") == 0) {
-			char temp[1024];
+			char temp[BIG_COMMAND];
 			scanf("%s", temp);
 			SPAM(("Stiamo eseguendo DELETE RECURSIVO con %s\n", temp));// strtok(NULL, " "));
 			
 			// elimina_recursivo(percorso)
 			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
 			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
-			char str[1024];	strcpy(str, temp);  	char * pch; char * before;
+			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
     		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
@@ -365,7 +373,7 @@ int main(){
  		| |__   _ _ __   __| |
  		|  __| | | '_ \ / _` |
  		| |    | | | | | (_| |
-	        |_|    |_|_| |_|\__,_|
+	    |_|    |_|_| |_|\__,_|
 		*/
 		if (strcmp(firstpart, "find") == 0) {
 			char currpath[BIG_COMMAND];
@@ -377,10 +385,6 @@ int main(){
             atleastone = 0;
             printf("%s", buffer);
 			find(Root.firstChild, temp, buffer);
-            if (atleastone == 0) { printf("no\n"); }
-			
-            atleastone = 0;
-			find(&Root, temp);
             if (atleastone == 0) { printf("no\n"); }
 			// find(percorso)
 		}
