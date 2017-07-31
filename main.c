@@ -1,18 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define print printf 				// Sorrynotsorry
+#define BIG_COMMAND 2048
+#define FIRST_COMMAND 16
 #define NAME_LENGHT 256
 #define CONTENT_LIMIT 256
-#define print printf
-#define BIG_COMMAND 2048
 
-#if 0		// Implementing SPAM as DEBUGGING UTILITY
+#if 0								// Implementing SPAM as DEBUGGING UTILITY
   #define SPAM(a) printf a
 #else
   #define SPAM(a) (void)0
 #endif
 
 // POWDERED BY CAFFEINE, SPERANZE DI LAUREA E BLACK MAGIC
+// http://patorjk.com/software/taag
 
 typedef struct Risorsa {
 	char filename[NAME_LENGHT];
@@ -25,7 +27,7 @@ typedef struct Risorsa {
 Risorsa Root;
 int atleastone;
 
-void printtree(Risorsa* node){ // Questa funzione è quasi inutile quanto me
+void printtree(Risorsa* node){ 															// Funzione finalizzata al debug per stampare l'albero
 	if (node==NULL) { printf("-");	}
 	else {
 		printf("[%s|%d]",node->filename, node->isFile);
@@ -34,9 +36,9 @@ void printtree(Risorsa* node){ // Questa funzione è quasi inutile quanto me
 	}
 }
 
-Risorsa* walktree(Risorsa *node, char percorso[], int value) {
+Risorsa* walktree(Risorsa *node, char percorso[], int value) {							// Ritorna il padre di dove dobbiamo operare
 	SPAM(("Il percorso e' %s\n\n", percorso));
-	char* p = percorso;  //char path[2048];	strcpy(path, percorso);
+	char* p = percorso; 
 	
 	if (percorso[0]=='/' && value > 0) { 												// Siamo nel caso in cui abbiamo ancora il prefisso / e abbiamo altra roba dopo 
 		if (node->firstChild == NULL && value > 0) { return 0; }
@@ -44,7 +46,7 @@ Risorsa* walktree(Risorsa *node, char percorso[], int value) {
 		node = node->firstChild;
 		}
 	
-	if (value == 0) { SPAM(("Returning %s\n\n", node->filename)); return node;} 		// Stiamo lavorando con la radice e dobbiamo rimanere li
+	if (value == 0) { SPAM(("Returning %s\n\n", node->filename)); return node;} 		// Stiamo lavorando con il livello subito sotto la radice e dobbiamo rimanere li
 	
 	p = strtok(percorso, "/");
 	
@@ -52,7 +54,7 @@ Risorsa* walktree(Risorsa *node, char percorso[], int value) {
 		SPAM(("\nTarget = |%s| Value = |%d| \n", p, value));
 		if (strcmp(node->filename, p) == 0) { 
 			if (node->firstChild != NULL) { SPAM(("Scendiamo subito a |%s|", node->firstChild)); node = node->firstChild; value--; p = strtok(NULL, "/"); SPAM(("\tOra path e' |%s|", p)); }
-			else  { SPAM(("Non possiamo scendere verticalmente\nn")); return 0; }
+			else  { SPAM(("Non possiamo scendere verticalmente\nn")); return 0; } 
 			}
 		else {
 			if (node->firstBrother != NULL && strcmp(node->filename, p) < 0 ) { SPAM(("Spostamento al fratello |%s| con value |%d| e path |%s|", node->firstBrother->filename, value, p)); node = node->firstBrother; }
@@ -60,7 +62,7 @@ Risorsa* walktree(Risorsa *node, char percorso[], int value) {
 		}	
 		}
 	
-	SPAM(("CURRENT: |%s| TARGET: |%s| VALUE: |%d|\n\n",node->filename, p, value));
+	SPAM(("CURRENT: |%s| TARGET: |%s| VALUE: |%d|\n\n", node->filename, p, value));
 	if (value == 1) { 
 		while (node->firstBrother != NULL && strcmp(node->filename, p) < 0)
 		{ node = node->firstBrother; }
@@ -73,16 +75,16 @@ int read(Risorsa* Node, char percorso[], char* Target, int value) {
 	
 	SPAM(("\nWe are trying to READ %s\n", percorso));
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
-	if (currNode == 0) { SPAM(("Errore")); printf("no\n"); return 0; }
-	if (currNode->firstChild == NULL) { SPAM(("Errore\n")); printf("no\n"); return 0; }
+	if (currNode == 0) { SPAM(("Errore")); printf("no\n"); return 0; }						// Caso in cui non si è scesi in maniera lecita prima
+	if (currNode->firstChild == NULL) { SPAM(("Errore\n")); printf("no\n"); return 0; }		// Se il padre di dove dobbiamo operare non ha figli...
 	
-	currNode = currNode->firstChild;
-	SPAM(("\n\n%s\n\n", currNode->filename));
-	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0)
+	currNode = currNode->firstChild;														// ... se no scendiamo
+	SPAM(("\n\n%s\n\n", currNode->filename));	
+	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0)		// Spostiamoci fino a che non arriviamo al figlio che dobbiamo leggere
 		{ currNode = currNode->firstBrother; }
 	SPAM(("%d %d %d\n", (currNode == NULL), (currNode->isFile == 1), (strcmp(currNode->filename, Target)== 0)));
-	if (currNode != NULL && currNode->isFile == 1 && strcmp(currNode->filename, Target) == 0 ) { printf("contenuto %s\n", currNode->content); return 1; }
-	else { printf("no\n");	}
+	if (currNode != NULL && currNode->isFile == 1 && strcmp(currNode->filename, Target) == 0 ) { printf("contenuto %s\n", currNode->content); return 1; }	// Se è leggibile stampa contenuto
+	else { printf("no\n");	}											
 	return 0; 
 	}
 
@@ -91,19 +93,21 @@ int write(Risorsa* Node, char contenuto[], char percorso[], char* Target, int va
 	SPAM(("\nWe are trying to WRITE %s with %s\n", percorso, contenuto));
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
 	SPAM(("We returned %s", currNode->filename));
-	if (currNode == 0) { SPAM(("Errore\n")); printf("no\n"); return 0; }
-	if (currNode->firstChild == NULL) { SPAM(("Errore\n")); printf("no\n"); return 0; }
-	currNode = currNode->firstChild;
-	//print("\n%s\n%s\n", currNode->filename, Target);
-	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) // Ci spostiamo lateralmente una volta giunti al livello giusto
+	if (currNode == 0) { SPAM(("Errore\n")); printf("no\n"); return 0; }					// Caso in cui non si è scesi in maniera lecita prima
+	if (currNode->firstChild == NULL) { SPAM(("Errore\n")); printf("no\n"); return 0; }		// Se il padre di dove dobbiamo operare non ha figli...
+	
+	currNode = currNode->firstChild;														// ... se no scendiamo
+	while (currNode->firstBrother != NULL && strcmp(currNode->filename, Target) < 0) 		// Ci spostiamo lateralmente una volta giunti al livello giusto
 		{ currNode = currNode->firstBrother; }
-	if (currNode != NULL && strcmp(currNode->filename, Target) == 0 && currNode->isFile == 1) { strcpy(currNode->content, contenuto); printf("ok %zu\n", strlen(contenuto)); }
+	if (currNode != NULL && strcmp(currNode->filename, Target) == 0 && currNode->isFile == 1) { strcpy(currNode->content, contenuto); printf("ok %d\n", strlen(contenuto)); }
 	else { printf("no\n"); } 
 	return 0; 
 	}
 	
 int find(Risorsa* Node,char target[], char currentpath[]) { 
+	
 	// Potrebbe venirti in menti di migliorare la complessità asintotica usando strcmp < 0, non è valida in quanto cerchiamo il nome della risorsa non il PATH
+	
 	SPAM(("Current Path = |%s| Curr Node = |%s|\n", currentpath, Node->filename));
 	if (strcmp(Node->filename, target) == 0) { 	printf("ok %s/%s\n", currentpath, Node->filename); atleastone = 1; }
 	if (Node->firstChild != NULL) {	char temp[2048];	strcpy(temp, currentpath );	find(Node->firstChild, target, strcat(strcat(temp, "/"), Node->filename)); }
@@ -157,24 +161,23 @@ int deleteRecursive(Risorsa *node, char percorso[], char* Target, int value) {
         printf("ok\n"); return 1; }
 	else { printf("no\n"); return 0; }
 	
-		
 }
 
-int insertiontree(Risorsa* Node, char percorso[], char* toAdd, int value, _Bool isFile){ /* Va bene sia per create che per create.dir, in base se si è fatta l'impl accennata sotto*/
+int insertiontree(Risorsa* Node, char percorso[], char* toAdd, int value, _Bool isFile){ /* Va bene sia per create che per create.dir, in base a _Bool isFile*/
 	
 	Risorsa* currNode = walktree(&Root, percorso, value-1);
-	if (currNode == 0 || currNode->isFile == 1) { SPAM(("Abbiamo sbagliato prima, o si tratta di un file!!!\n\n")); printf("no\n"); return 0;	}
+	if (currNode == 0 || currNode->isFile == 1) { SPAM(("Abbiamo sbagliato prima, o si tratta di un file!\n\n")); printf("no\n"); return 0;	} // Se c'è stato un errore nella discesa o il supposto padre è un FILE e non una DIRECTORY non possiamo proseguire
 	else {
 		SPAM(("\n\nWe are trying to add |%s|\n", toAdd));
-		if (currNode->firstChild == NULL) { // Caso inserimento come primo figlio
+		if (currNode->firstChild == NULL) { // Caso inserimento come primo e unico figlio
 			Risorsa* newNode = malloc(sizeof(Risorsa));
-			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");}//Facciamo una basic declaration per il nuovo nodo
+			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");} // Facciamo una basic declaration per il nuovo nodo
 			currNode->firstChild = newNode; printf("ok\n"); return 0;	} 
 		if (strcmp(toAdd, currNode->firstChild->filename) <= 0 ) { // Caso di inserimento in cui dobbiamo inserire il nuovo nodo come primo dei figli!
 			if (strcmp(toAdd, currNode->firstChild->filename) == 0)  {	SPAM(("Abbiamo gia' il figlio!")); printf("no\n"); return 0;	}
 			SPAM(("\nStiamo lavorando con |%s| e suo figlio |%s|, in mezzo metteremo |%s|\n\n", currNode->filename, currNode->firstChild->filename, toAdd));
 			Risorsa* newNode = malloc(sizeof(Risorsa)); 
-			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");}//Facciamo una basic declaration per il nuovo nodo
+			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");} // Facciamo una basic declaration per il nuovo nodo
 			newNode->firstBrother = currNode->firstChild; currNode->firstChild = newNode;
 			SPAM(("Vediamo ora le cose! Il padre e' |%s|, il figlio inserito e' |%s| ed il suo vecchio figlio era |%s|\n", currNode->filename, currNode->firstChild->filename, currNode->firstChild->firstBrother->filename));
 			printf("ok\n");
@@ -186,7 +189,6 @@ int insertiontree(Risorsa* Node, char percorso[], char* toAdd, int value, _Bool 
 				{ SPAM(("looping")); currNode = currNode->firstBrother;	}
 			SPAM((" in the sky with diamonds\n")); 
 			if (strcmp(toAdd, currNode->filename) == 0)  {	SPAM(("Abbiamo già il figlio!\n")); printf("no\n"); return 0;	}
-			SPAM(("HELLO"));
 			Risorsa* newNode = malloc(sizeof(Risorsa)); 
 			strcpy(newNode->filename, toAdd);		newNode->isFile = isFile;	newNode->firstBrother = NULL;	newNode->firstChild = NULL; if(isFile) { strcpy(newNode->content, "");}//Facciamo una basic declaration per il nuovo nodo
 			newNode->firstBrother = currNode->firstBrother; currNode->firstBrother = newNode;
@@ -199,22 +201,18 @@ int insertiontree(Risorsa* Node, char percorso[], char* toAdd, int value, _Bool 
 
 int main(){
 	
-	char firstpart[25];
+	char firstpart[FIRST_COMMAND];
 	int exit_command = 0;
 	
 	strcpy(Root.filename, "");
 	
 	SPAM(("BENVENUTO NEL FANTASTICO FILESYSTEM\n\n"));
+	SPAM(("\n\\(^^)/   T A K E   M Y   E N E R G Y     \\(^^)/ \n")); // Lucky charm debug phrases
 	
-	SPAM(("Il nome del coso e' |%s|", Root.filename));
-	
-	do {
-		SPAM(("\n\\(^^)/   T A K E   M Y   E N E R G Y     \\(^^)/ \n"));
+	do {									// Main loop logic 
+				
+		scanf("%s", firstpart); 			// Storing first part of command
 		
-		scanf("%s", firstpart); //scanf per il primo, vado di strcmp e poi 
-		//printf("%s\n", firstpart);
-		//firstpart = strtok(command, " ");
-		//printf("%s", firstpart);
 		/*
 		     _____                _       
  		   / ____|              | |      
@@ -226,17 +224,14 @@ int main(){
 		if (strcmp(firstpart, "create") == 0) {
 			char temp[BIG_COMMAND];
 			scanf("%s", temp);
-			SPAM(("Stiamo eseguendo CREATE con %s\n", temp));//strtok(NULL, " "));
+			SPAM(("Stiamo eseguendo CREATE con %s\n", temp));
 			
-			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
-			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
+			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Count number of delimiter '/' inside the target_path of the command
 			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
-    		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
 			
 			insertiontree(&Root, temp, before, count, 1);
-			// create(percorso)
 		}
 		/*
 		  _____                _            _ _      
@@ -249,12 +244,10 @@ int main(){
 		if (strcmp(firstpart, "create_dir") == 0 || strcmp(firstpart, "cd") == 0) {
 			char temp[BIG_COMMAND];
 			scanf("%s", temp);
-			SPAM(("Stiamo eseguendo CREATE DIRECTORY con %s\n", temp));//strtok(NULL, " "));
+			SPAM(("Stiamo eseguendo CREATE DIRECTORY con %s\n", temp));
 			
-			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
-			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
+			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }   // Count number of delimiter '/' inside the target_path of the command
 			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
-    		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
 			
@@ -273,12 +266,10 @@ int main(){
 		if (strcmp(firstpart, "read") == 0) {
 			char temp[BIG_COMMAND];
 			scanf("%s", temp);
-			SPAM(("Stiamo eseguendo READ con %s\n", temp));//strtok(NULL, " "));
+			SPAM(("Stiamo eseguendo READ con %s\n", temp));
 			
-			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
-			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
+			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }   // Count number of delimiter '/' inside the target_path of the command
 			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
-    		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
 			
@@ -301,10 +292,8 @@ int main(){
 			scanf("%s", temp1);
 			
 			
-			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
-			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
+			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }   // Count number of delimiter '/' inside the target_path of the command
 			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
-    		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
 			
@@ -314,7 +303,7 @@ int main(){
 			tempp++;
 			tempp[strlen(tempp)-1] = 0;
 		
-			SPAM(("Stiamo eseguendo WRITE con %s e CONTENUTO %s\n", temp, tempp));//strtok(NULL, " "), strtok(NULL, " "));
+			SPAM(("Stiamo eseguendo WRITE con %s e CONTENUTO %s\n", temp, tempp));
 			
 			write(&Root,tempp, temp, before, count);
 			// write(percorso, contenuto)
@@ -331,12 +320,10 @@ int main(){
 			
 			char temp[BIG_COMMAND];
 			scanf("%s", temp);
-			SPAM(("Stiamo eseguendo DELETE con %s\n", temp));// strtok(NULL, " "));
+			SPAM(("Stiamo eseguendo DELETE con %s\n", temp));
 			
-			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
-			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
+			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }   // Count number of delimiter '/' inside the target_path of the command
 			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
-    		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
 			
@@ -354,18 +341,14 @@ int main(){
 		if (strcmp(firstpart, "delete_r") == 0) {
 			char temp[BIG_COMMAND];
 			scanf("%s", temp);
-			SPAM(("Stiamo eseguendo DELETE RECURSIVO con %s\n", temp));// strtok(NULL, " "));
+			SPAM(("Stiamo eseguendo DELETE RECURSIVO con %s\n", temp));
 			
-			// elimina_recursivo(percorso)
-			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }  // Conta il numero di '/' dentro il path di temp
-			//printf("\nConta '/' 1st Command |%d|\n", count);		//	printf("\n\n###### DISSECTING PATH ###### STEP-ASIDE ######\n\n"); // Dissezione del path con strtok
+			int i, count;	for (i=0, count=0; temp[i]; i++) {  count += (temp[i] == '/'); }   // Count number of delimiter '/' inside the target_path of the command
 			char str[BIG_COMMAND];	strcpy(str, temp);  	char * pch; char * before;
-    		//printf ("Splitting string \"%s\" into tokens:\n", temp);
  			pch = strtok (str,"/");
     		while (pch != NULL){    	SPAM(("%s\n",pch));	before = pch;    	pch = strtok (NULL, "/");} // Tokenizer the string, now used as a Debug, need before to keep the filename
 			
 			deleteRecursive(&Root, temp, before, count);
-			// create(percorso)
 		}
 		/*
 		  ______ _           _ 
@@ -380,9 +363,9 @@ int main(){
 			char temp[BIG_COMMAND];
 			char buffer[BIG_COMMAND];
 			scanf("%s", temp);
-			SPAM(("Stiamo eseguendo FIND con %s\n", temp));//strtok(NULL, " "));
+			SPAM(("Stiamo eseguendo FIND con %s\n", temp));
 			strcpy(buffer, "");
-            atleastone = 0;
+            atleastone = 0; // To check if we don't find matches
             printf("%s", buffer);
 			find(Root.firstChild, temp, buffer);
             if (atleastone == 0) { printf("no\n"); }
@@ -396,11 +379,12 @@ int main(){
 		 |______/_/\_\_|\__|
         */
 		if (strcmp(firstpart, "exit") == 0) {
-			SPAM(("Stiamo terminando questo abomino\n"));
-			SPAM(("Python do it better"));
+			SPAM(("The END is COMING\n"));
+			SPAM(("p.s. Python do it better"));
+			
 			exit_command = 1;
 		}
-		if (strcmp(firstpart, "print") == 0) {
+		if (strcmp(firstpart, "print") == 0) {	// Debugging function
 			printf("\n\n###### PRINT-TREE###### STEP-ASIDE ######\n\n");+
 			printf("CURR - BROTHER - SON\n");
 			printtree(&Root);
