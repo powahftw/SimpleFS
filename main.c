@@ -13,9 +13,6 @@
   #define SPAM(a) (void)0
 #endif
 
-// POWDERED BY CAFFEINE, SPERANZE DI LAUREA E BLACK MAGIC
-// http://patorjk.com/software/taag
-
 typedef struct Risorsa {
 	char filename[NAME_LENGHT];
 	_Bool isFile;
@@ -379,16 +376,9 @@ int main(){
 		 |______/_/\_\_|\__|
         */
 		if (strcmp(firstpart, "exit") == 0) {
-			SPAM(("The END is COMING\n"));
-			SPAM(("p.s. Python do it better"));
+			
 			
 			exit_command = 1;
-		}
-		if (strcmp(firstpart, "print") == 0) {	// Debugging function
-			printf("\n\n###### PRINT-TREE###### STEP-ASIDE ######\n\n");+
-			printf("CURR - BROTHER - SON\n");
-			printtree(&Root);
-			printf("\n\n");
 		}
 		/*else {
 		printf("Huston we have a problem! A parsing problem with %s", firstpart);
