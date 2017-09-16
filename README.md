@@ -1,4 +1,4 @@
-# SimpleFS - A small simple virtual FileSystem
+# SimpleFS - A small simple virtual FileSystem [![Build Status](https://travis-ci.org/powahftw/SimpleFS.svg?branch=master)](https://travis-ci.org/powahftw/SimpleFS)
 Coded as the final assignment of the API (Principles of Algorithm Design). SimpleFS is a virtual hierarchic filesystem that simulate some of the basic functions of a real file system. 
 
 
