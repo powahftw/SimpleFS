@@ -1,0 +1,14 @@
+#!/bin/bash
+
+language: c
+compiler:
+    - gcc
+
+before_script:
+ - chmod +x test/tests.sh
+ - chmod +x main.c
+ 
+script: 
+ - gcc -o comp.out main.c
+ - chmod +x comp.out
+ - (cd test; ./tests.sh)
